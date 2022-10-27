@@ -101,17 +101,6 @@ stardata['x'], stardata['y'] = projection(star_positions)
 
 #Adjust fish-eye Allsky distotion
 stardata['x'], stardata['y'] = get_az_alt(stardata.ra_hours,stardata.dec_degrees,lst,-22.5344)
-# print(stardata['x'])
-# x=fzsin(A−Δ)+x0
-# y=fzcos(A−Δ)+y0
-#f = 3.365 piexels/degree
-# z = zenith estrela
-# A = azimuth estrela
-# Δ = rotacao da camera
-# x0 e y0 = coordenadas do zenith da camera
-# rho, phi = cart2pol(stardata['x'], stardata['y'])
-# stardata['x'] = (3.365*rho*np.sin(phi-40)+0)/3
-# stardata['y'] = (3.365*phi*np.cos(phi-40)+0)/3
 
 # Create a True/False mask marking the stars bright enough to be
 # included in our plot.  And go ahead and compute how large their
@@ -129,39 +118,21 @@ marker_size = (0.7 + limiting_magnitude - magnitude) ** 2.0
 img = plt.imread("http://200.131.64.237:8090/img/allsky_picole.png")
 fig, ax = plt.subplots(figsize=[640, 480])
 tr = tx.Affine2D().rotate_deg(0)
-# ax.imshow(img, extent=[-0.911, 0.911, -0.7, 0.7])
 ax.imshow(img, extent=[-320, 320, -240, 240])
-
-# Horizons circle
-horizon = []
-h0 = projection(opd_local.from_altaz(alt_degrees=0, az_degrees=0.0))
-for i in range(1, 73):
-    delta = 5.0
-    current = i * delta
-    h1 = projection(opd_local.from_altaz(alt_degrees=0, az_degrees=current))
-    horizon.append([h0, h1])
-    h0 = h1
-
-#Plot Horizon
-ax.add_collection(LineCollection(horizon,
-                colors='#ffff3d', linewidths=1, linestyle='dashed', zorder=1, alpha=0.5, transform=tr + ax.transData))
 
 # Plot constellation lines
 ax.add_collection(LineCollection(generate_constellation_lines(constellations),
-                colors='gold', linewidths=1, zorder=1, alpha=0.4, transform=tr + ax.transData))
+                colors='gold', linewidths=1, zorder=1, alpha=0.4))
 
 # Plot Stars only at daytime
-# if 5<datetime.now().hour<24:
 ax.scatter(stardata['x'][bright_stars], stardata['y'][bright_stars],
-    s=marker_size, color='k', transform=tr + ax.transData)
+    s=marker_size, color='r', alpha=.2)
 
 # Adjusts
 field_of_view_degrees = 180.0
 angle = np.pi - field_of_view_degrees / 360.0 * np.pi
 limit = np.sin(angle) / (1.0 - np.cos(angle))
 
-# ax.set_xlim(-limit, limit)
-# ax.set_ylim(-limit, limit)
 ax.xaxis.set_visible(False)
 ax.yaxis.set_visible(False)
 ax.patch.set_alpha(0.3)
