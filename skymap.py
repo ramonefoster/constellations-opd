@@ -8,6 +8,7 @@ from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 from skyfield.api import Star, load, wgs84
 from skyfield.data import hipparcos, stellarium
+from skyfield.api import load_constellation_names
 from skyfield.projections import build_stereographic_projection
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -25,13 +26,42 @@ class SkyMap():
                                 '/skycultures/western_SnT/constellationship.fab')        
         # Hipparcos catalog
         with load.open('hip_main.dat') as f:
-            self.stardata = hipparcos.load_dataframe(f)        
+            self.stardata = hipparcos.load_dataframe(f)  
 
+        
         with load.open(self.url_constellations) as f:
             self.constellations = stellarium.parse_constellations(f)
-        
+            
         # An ephemeris from the JPL provides Sun and Earth positions.
         self.eph = load('de421.bsp')
+    
+    def constelattions_name_coord(self, lst):
+        """
+        Get the first star coordinates of the constellation, 
+        converts to cartesian and adds to a dic with its name
+        """
+        constellation_coord = {}
+        d = dict(load_constellation_names())
+        for stars in self.constellations:
+            star_hip = [coord[0] for coord in stars[1]]                
+            try:
+                ra_total = 0
+                dec_total = 0
+                for star in star_hip:
+                    ra_total += self.stardata.loc[star].ra_hours
+                    dec_total += self.stardata.loc[star].dec_degrees
+                    self.stardata.loc[star].dec_degrees
+
+                # Calc mean Right Ascension and mean declination    
+                ra_mean = ra_total/len(star_hip)
+                dec_mean = dec_total/len(star_hip)
+                # convert to cartesian to insert on Image
+                az, elev = utils.get_az_alt(ra_mean, dec_mean, lst, -22.5344)
+                x, y = utils.pol2cart(90-elev, az, self.allsky_angle)
+                constellation_coord[d[stars[0]]] = (x, y)    
+            except:
+                pass
+        return constellation_coord
             
     def reload_eph(self):
         t = os.path.getmtime('de421.bsp')
@@ -53,18 +83,17 @@ class SkyMap():
 
     def generate(self, allsky_img, skymap_img):
         while True:
-            # self.reload_eph()
             # Timezone
             AMS = timezone('America/Sao_Paulo')
             ts = load.timescale()
 
             if 6<datetime.now().hour<18:
-                #AllSky offline image
+                #AllSky at OPD is offline
                 is_online = False
-                time_at = ts.from_datetime(AMS.localize(datetime(2022, 7, 4, 23, 36, 17)))
             else:
                 is_online = True
-                time_at = ts.from_datetime(AMS.localize(datetime.now()))
+
+            time_at = ts.from_datetime(AMS.localize(datetime.now()))
             
             opd_local = wgs84.latlon(-22.5344, -45.5825, elevation_m=1800).at(time_at)
 
@@ -84,6 +113,7 @@ class SkyMap():
                 #Adjust fish-eye Allsky distotion                
                 azimuth, elevation = utils.get_az_alt(self.stardata.ra_hours,self.stardata.dec_degrees,lst,-22.5344)
                 self.stardata['x'], self.stardata['y'] = utils.pol2cart(90-elevation, azimuth, self.allsky_angle)
+                
                 # Create a True/False mask marking the stars bright enough to be
                 # included in our plot.  And go ahead and compute how large their
                 # markers will be on the plot.
@@ -120,23 +150,28 @@ class SkyMap():
                 plt.xlim(-320, 320)
                 plt.ylim(-240, 240)
 
+                #insert coordinates to insert it on image
+                constellations_coord = self.constelattions_name_coord(lst)
+                for constellation in constellations_coord:                    
+                    x, y = constellations_coord[constellation]                    
+                    if (-280 < x < 280) and (-220 < y < 220) and is_online:                        
+                        plt.text(x, y, constellation, fontsize=4, color='gold', alpha=0.5)
+
                 # get planets and bright stars names/coordinates
                 planets, stars = getEphem.astro_coordinates(self.allsky_angle)  
-                for planet in planets:                    
-                    x, y = planets[planet]
-                    arr_img = plt.imread(f"icons/{planet}.png")
-                    if (-280 < x < 280) and (-220 < y < 220) and is_online:
-                        im = OffsetImage(arr_img, zoom=.1)
-                        ab = AnnotationBbox(im, (x, y), frameon=False)
-                        ax.add_artist(ab)
-                        # plt.text(x, y, planet, fontsize=5, color='gold', alpha=0.8)
-                
-                for star in stars:                    
-                    x, y = stars[star]
-                    if (-280 < x < 280) and (-220 < y < 220) and is_online:
-                        plt.text(x, y, star, fontsize=5, color='gold', alpha=0.8)
+                valid_planets = [(planet, planets[planet]) for planet in planets if (-280 < planets[planet][0] < 280) and (-220 < planets[planet][1] < 220) and is_online]
+                valid_stars = [(star, stars[star]) for star in stars if (-280 < stars[star][0] < 280) and (-220 < stars[star][1] < 220) and is_online]
 
-                #plt.show()
+                for planet, (x, y) in valid_planets:
+                    arr_img = plt.imread(f"icons/{planet}.png")
+                    im = OffsetImage(arr_img, zoom=.1)
+                    ab = AnnotationBbox(im, (x, y), frameon=False)
+                    ax.add_artist(ab)
+
+                for star, (x, y) in valid_stars:
+                    plt.text(x, y, star, fontsize=5, color='gold', alpha=0.8)
+
+
                 print(f"Creating map {time_at.utc_strftime('%H:%M')}")
                 fig.savefig(skymap_img, bbox_inches='tight', transparent=True, dpi=250)
                 plt.clf()

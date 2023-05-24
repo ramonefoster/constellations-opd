@@ -102,15 +102,20 @@ def get_az_alt(ra, dec, lst, latitude):
 def pol2cart(rho, phi, allsky_angle):
     """Convert polar coordinates to cartesian"""
     """rho: zenith  |   phi: azimuth"""
-    x = rho * np.cos(np.radians(phi+allsky_angle))
-    y = rho * np.sin(np.radians(phi+allsky_angle))
+
     # x=f*rho*cos(A-?)+x0
     # y=f*rho*sin(A-?)+y0
-    #f = 3.365 piexels/degree
-    # z = zenith estrela
-    # A = azimuth estrela
-    # ? = rotacao da camera
-    # x0 e y0 = coordenadas do zenith da camera
-    x=3.365*x+8.5
-    y=3.365*y-5
+    # f = 3.365 piexels/degree
+    # rho = star zenith
+    # phi = star azimuth
+    # allsky_angle = camera rotation
+    # x0 e y0 = coordinates of cameras zenith
+
+    x = rho * np.cos(np.radians(phi+allsky_angle))
+    y = rho * np.sin(np.radians(phi+allsky_angle))
+    x0 = 8.5
+    y0 = -5
+    
+    x=3.365*x+x0
+    y=3.365*y+y0
     return(x, y)
