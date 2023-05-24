@@ -3,13 +3,14 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
+import matplotlib.transforms as tx
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 from skyfield.api import Star, load, wgs84
 from skyfield.data import hipparcos, stellarium
 from skyfield.projections import build_stereographic_projection
 from datetime import datetime, timedelta
 from pytz import timezone
-import matplotlib.transforms as tx
 
 import utils, getEphem
 
@@ -31,7 +32,6 @@ class SkyMap():
         
         # An ephemeris from the JPL provides Sun and Earth positions.
         self.eph = load('de421.bsp')
-
             
     def reload_eph(self):
         t = os.path.getmtime('de421.bsp')
@@ -114,11 +114,16 @@ class SkyMap():
                 plt.xlim(-320, 320)
                 plt.ylim(-240, 240)
 
+                # get planets and bright stars names/coordinates
                 planets, stars = getEphem.astro_coordinates(self.allsky_angle)  
                 for planet in planets:                    
                     x, y = planets[planet]
+                    arr_img = plt.imread(f"icons/{planet}.png")
                     if (-280 < x < 280) and (-220 < y < 220):
-                        plt.text(x, y, planet, fontsize=5, color='gold', alpha=0.8)
+                        im = OffsetImage(arr_img, zoom=.1)
+                        ab = AnnotationBbox(im, (x, y), frameon=False)
+                        ax.add_artist(ab)
+                        # plt.text(x, y, planet, fontsize=5, color='gold', alpha=0.8)
                 
                 for star in stars:                    
                     x, y = stars[star]
