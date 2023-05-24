@@ -1,20 +1,23 @@
+import os
+import time
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 
-from skyfield.api import Star, load, wgs84, N, S, W, E
-from skyfield.data import hipparcos, mpc, stellarium
+from skyfield.api import Star, load, wgs84
+from skyfield.data import hipparcos, stellarium
 from skyfield.projections import build_stereographic_projection
 from datetime import datetime, timedelta
 from pytz import timezone
 import matplotlib.transforms as tx
-import threading
-import os
-import time
-import math
+
+import utils, getEphem
 
 class SkyMap():    
     def __init__(self):
+
+        self.allsky_angle = 134.6
+
         self.stardata = None
         # Download a list of constellations from Stellarium
         self.url_constellations = ('https://raw.githubusercontent.com/Stellarium/stellarium/master'
@@ -28,55 +31,13 @@ class SkyMap():
         
         # An ephemeris from the JPL provides Sun and Earth positions.
         self.eph = load('de421.bsp')
+
             
     def reload_eph(self):
         t = os.path.getmtime('de421.bsp')
         if (datetime.now() - datetime.fromtimestamp(t)) > timedelta(minutes=30):
             # An ephemeris from the JPL provides Sun and Earth positions.
-            self.eph = load('de421.bsp')
-
-    def pol2cart(self, rho, phi):
-        """Convert polar coordinates to cartesian"""
-        """rho: zenith  |   phi: azimuth"""
-        x = rho * np.cos(np.radians(phi+52.6+82.0))
-        y = rho * np.sin(np.radians(phi+52.6+82.0))
-        # x=f*rho*cos(A-?)+x0
-        # y=f*rho*sin(A-?)+y0
-        #f = 3.365 piexels/degree
-        # z = zenith estrela
-        # A = azimuth estrela
-        # ? = rotacao da camera
-        # x0 e y0 = coordenadas do zenith da camera
-        x=3.365*x+8.5
-        y=3.365*y-5
-        return(x, y)
-
-   
-    def get_az_alt(self, coordRA, coordDEC, lst, latitude):
-        """Convert equatorial coordinates to horizontal"""
-        DEG = 180 / math.pi
-        RAD = math.pi / 180.0        
-        H = (lst - coordRA) * 15
-
-        #altitude calc
-        sinAltitude = (np.sin(coordDEC * RAD)) * (np.sin(latitude * RAD)) + (np.cos(coordDEC * RAD) * np.cos(latitude * RAD) * np.cos(H * RAD))
-        altitude = np.arcsin(sinAltitude) * DEG #altura em graus
-        #Zenith
-        zenith = 90-altitude
-
-        #azimuth calc
-        y = -1 * np.sin(H * RAD)
-        x = (np.tan(coordDEC * RAD) * np.cos(latitude * RAD)) - (np.cos(H * RAD) * np.sin(latitude * RAD))
-
-        #Azimuth calc
-        azimuth = np.arctan2(y, x) * DEG
-        #converting neg values to pos
-        if (azimuth.any() < 0):
-            azimuth = azimuth + 360
-        
-        x, y = self.pol2cart(zenith, azimuth)
-
-        return(x,y)
+            self.eph = load('de421.bsp')    
     
     def generate_constellation_lines(self, data):
         edges = [edge for name, edges in data for edge in edges]
@@ -90,15 +51,14 @@ class SkyMap():
         # array into the shape that matplotlib expects.
         return np.rollaxis(np.array([xy1, xy2]), 1)
 
-    def generate(self, allsky_path):
+    def generate(self, allsky_img, skymap_img):
         while True:
+            # self.reload_eph()
             # Timezone
             AMS = timezone('America/Sao_Paulo')
             ts = load.timescale()
-            if 6<datetime.now().hour<18:
-                time_at = ts.from_datetime(AMS.localize(datetime(2022, 7, 4, 23, 36, 17)))
-            else:
-                time_at = ts.from_datetime(AMS.localize(datetime.now()))
+            
+            time_at = ts.from_datetime(AMS.localize(datetime.now()))
 
             opd_local = wgs84.latlon(-22.5344, -45.5825, elevation_m=1800).at(time_at)
 
@@ -109,15 +69,15 @@ class SkyMap():
             sun = self.eph['sun']
             earth = self.eph['earth']
 
-            try:
+            try:                
                 # Make a projection and get the the x and y coordinates that each star will have on the plot.
                 projection = build_stereographic_projection(position)
                 star_positions = earth.at(time_at).observe(Star.from_dataframe(self.stardata))
                 self.stardata['x'], self.stardata['y'] = projection(star_positions)
 
-                #Adjust fish-eye Allsky distotion
-                self.stardata['x'], self.stardata['y'] = self.get_az_alt(self.stardata.ra_hours,self.stardata.dec_degrees,lst,-22.5344)
-
+                #Adjust fish-eye Allsky distotion                
+                azimuth, elevation = utils.get_az_alt(self.stardata.ra_hours,self.stardata.dec_degrees,lst,-22.5344)
+                self.stardata['x'], self.stardata['y'] = utils.pol2cart(90-elevation, azimuth, self.allsky_angle)
                 # Create a True/False mask marking the stars bright enough to be
                 # included in our plot.  And go ahead and compute how large their
                 # markers will be on the plot.
@@ -125,17 +85,16 @@ class SkyMap():
                 bright_stars = (self.stardata.magnitude <= limiting_magnitude)
                 magnitude = self.stardata['magnitude'][bright_stars]
                 marker_size = (0.5 + limiting_magnitude - magnitude) ** 2.0
-
+                
                 # Get allsky from URL (640x480)
-                img = plt.imread(r"C:\Users\teste\Desktop\coopd\public\img\allsky_picole.jpg")
+                img = plt.imread(allsky_img)
                 fig, ax = plt.subplots(figsize=[6, 6])
                 tr = tx.Affine2D().rotate_deg(0)
                 ax.imshow(img, extent=[-320, 320, -240, 240])
 
                 # Plot constellation lines
                 ax.add_collection(LineCollection(self.generate_constellation_lines(self.constellations),
-                                    colors='gold', linewidths=.5, zorder=1, alpha=0.4))
-                
+                                    colors='gold', linewidths=.5, zorder=1, alpha=0.4))                
 
                 # Plot Stars only at daytime
                 ax.scatter(self.stardata['x'][bright_stars], self.stardata['y'][bright_stars],
@@ -155,16 +114,33 @@ class SkyMap():
                 plt.xlim(-320, 320)
                 plt.ylim(-240, 240)
 
+                planets, stars = getEphem.astro_coordinates(self.allsky_angle)  
+                for planet in planets:                    
+                    x, y = planets[planet]
+                    if (-280 < x < 280) and (-220 < y < 220):
+                        plt.text(x, y, planet, fontsize=5, color='gold', alpha=0.8)
+                
+                for star in stars:                    
+                    x, y = stars[star]
+                    if (-280 < x < 280) and (-220 < y < 220):
+                        plt.text(x, y, star, fontsize=5, color='gold', alpha=0.8)
+
                 #plt.show()
-                print(f"{datetime.now().hour}:{datetime.now().minute} Creating map {time_at.utc_strftime('%H:%M')}")
-                fig.savefig(allsky_path, bbox_inches='tight', transparent=True, dpi=250)
+                print(f"Creating map {time_at.utc_strftime('%H:%M')}")
+                fig.savefig(skymap_img, bbox_inches='tight', transparent=True, dpi=250)
                 plt.clf()
-                plt.close(fig)
+                plt.close(fig) 
+                             
                 self.reload_eph()
                 time.sleep(30)
             except Exception as e:
                 print("ERRO SKYMAP:", str(e))
 
-x = SkyMap()
-x.generate(r"C:\Users\teste\Desktop\coopd\public\img\allsky_picole.png")
+#path of original allsky image
+allsky_img = "images/allsky.jpg"
+#path of destination skymap image
+skymap_img = "images/skymap.png"
+
+skyMap = SkyMap()
+skyMap.generate(allsky_img, skymap_img)
 
