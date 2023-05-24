@@ -40,12 +40,13 @@ def astro_coordinates(allsky_angle):
     sidereal_time = opd.sidereal_time()
 
     #Planets
+    moon = ephem.Moon()
     mars = ephem.Mars() 
     venus = ephem.Venus()
     jupiter = ephem.Jupiter()
     saturn = ephem.Saturn()
 
-    planets_list = [mars, venus, jupiter, saturn] 
+    planets_list = [moon, mars, venus, jupiter, saturn] 
 
     stars = {}
     planets = {}

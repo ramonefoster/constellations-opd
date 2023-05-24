@@ -10,6 +10,8 @@ from skyfield.api import Star, load, wgs84
 from skyfield.data import hipparcos, stellarium
 from skyfield.api import load_constellation_names
 from skyfield.projections import build_stereographic_projection
+from skyfield.framelib import ecliptic_frame
+
 from datetime import datetime, timedelta
 from pytz import timezone
 
@@ -103,11 +105,13 @@ class SkyMap():
             position = opd_local.from_altaz(alt_degrees=90, az_degrees=0)        
             sun = self.eph['sun']
             earth = self.eph['earth']
+            moon = self.eph['moon']
 
             try:                
                 # Make a projection and get the the x and y coordinates that each star will have on the plot.
                 projection = build_stereographic_projection(position)
-                star_positions = earth.at(time_at).observe(Star.from_dataframe(self.stardata))
+                e = earth.at(time_at)
+                star_positions = e.observe(Star.from_dataframe(self.stardata))
                 self.stardata['x'], self.stardata['y'] = projection(star_positions)
 
                 #Adjust fish-eye Allsky distotion                
@@ -150,6 +154,20 @@ class SkyMap():
                 plt.xlim(-320, 320)
                 plt.ylim(-240, 240)
 
+                #moon
+                s = e.observe(sun).apparent()
+                m = e.observe(moon).apparent()
+                _, slon, _ = s.frame_latlon(ecliptic_frame)
+                _, mlon, _ = m.frame_latlon(ecliptic_frame)
+                phase = (mlon.degrees - slon.degrees) % 360.0
+
+                if 0 <= phase < 90:
+                    moon_phase = 'new_moon'
+                if 180 <= phase < 270:
+                    moon_phase = 'full_moon'
+                else:
+                    moon_phase = 'quarter_moon'
+
                 #insert coordinates to insert it on image
                 constellations_coord = self.constelattions_name_coord(lst)
                 for constellation in constellations_coord:                    
@@ -163,7 +181,10 @@ class SkyMap():
                 valid_stars = [(star, stars[star]) for star in stars if (-280 < stars[star][0] < 280) and (-220 < stars[star][1] < 220) and is_online]
 
                 for planet, (x, y) in valid_planets:
-                    arr_img = plt.imread(f"icons/{planet}.png")
+                    if 'Moon' in planet:
+                        arr_img = plt.imread(f"icons/{moon_phase}.png")
+                    else:
+                        arr_img = plt.imread(f"icons/{planet}.png")
                     im = OffsetImage(arr_img, zoom=.1)
                     ab = AnnotationBbox(im, (x, y), frameon=False)
                     ax.add_artist(ab)
