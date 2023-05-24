@@ -57,9 +57,15 @@ class SkyMap():
             # Timezone
             AMS = timezone('America/Sao_Paulo')
             ts = load.timescale()
-            
-            time_at = ts.from_datetime(AMS.localize(datetime.now()))
 
+            if 6<datetime.now().hour<18:
+                #AllSky offline image
+                is_online = False
+                time_at = ts.from_datetime(AMS.localize(datetime(2022, 7, 4, 23, 36, 17)))
+            else:
+                is_online = True
+                time_at = ts.from_datetime(AMS.localize(datetime.now()))
+            
             opd_local = wgs84.latlon(-22.5344, -45.5825, elevation_m=1800).at(time_at)
 
             #local sidereal time
@@ -119,7 +125,7 @@ class SkyMap():
                 for planet in planets:                    
                     x, y = planets[planet]
                     arr_img = plt.imread(f"icons/{planet}.png")
-                    if (-280 < x < 280) and (-220 < y < 220):
+                    if (-280 < x < 280) and (-220 < y < 220) and is_online:
                         im = OffsetImage(arr_img, zoom=.1)
                         ab = AnnotationBbox(im, (x, y), frameon=False)
                         ax.add_artist(ab)
@@ -127,7 +133,7 @@ class SkyMap():
                 
                 for star in stars:                    
                     x, y = stars[star]
-                    if (-280 < x < 280) and (-220 < y < 220):
+                    if (-280 < x < 280) and (-220 < y < 220) and is_online:
                         plt.text(x, y, star, fontsize=5, color='gold', alpha=0.8)
 
                 #plt.show()
