@@ -4,6 +4,6 @@
 <p align="center">Install the requirements >> pip install -r requirements.txt</p>
 
 ### Images
-<img src="OPD_constellations.png" alt="example image">
+<img src="images\skymap.png" alt="skymap">
 
 
