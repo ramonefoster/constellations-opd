@@ -4,6 +4,7 @@
 <p align="center">Install the requirements >> pip install -r requirements.txt</p>
 
 ### Images
-<img src="images\skymap.png" alt="skymap">
+<img src="images\allsky.png" alt="skymap">
+<img src="images\allsky340c.png" alt="skymap">
 
 

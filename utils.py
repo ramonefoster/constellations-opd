@@ -113,8 +113,12 @@ def pol2cart(rho, phi, allsky_angle):
 
     x = rho * np.cos(np.radians(phi+allsky_angle))
     y = rho * np.sin(np.radians(phi+allsky_angle))
-    x0 = 8.5
-    y0 = -5
+    if allsky_angle<0:
+        x0 = 0.5
+        y0 = 12.1
+    else:
+        x0 = 8.5
+        y0 = -5
     
     x=3.365*x+x0
     y=3.365*y+y0
