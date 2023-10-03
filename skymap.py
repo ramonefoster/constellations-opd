@@ -216,9 +216,9 @@ class SkyMap():
                     print("ERRO SKYMAP:", str(e))
 
 #path of original allsky image
-allsky_img = [r"images\allsky340c.jpg", r"images\allsky.jpg"]
+allsky_img = [r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky340c.jpg", r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky_picole.jpg"]
 #path of destination skymap image
-skymap_img = [r"images\skymap340c.png", r"images\allsky.png"]
+skymap_img = [r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky340c.png", r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky_picole.png"]
 angles = [-41, 133]
 
 skyMap = SkyMap()
