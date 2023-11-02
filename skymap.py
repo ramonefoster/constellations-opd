@@ -219,7 +219,7 @@ class SkyMap():
 allsky_img = [r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky340c.jpg", r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky_picole.jpg"]
 #path of destination skymap image
 skymap_img = [r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky340c.png", r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky_picole.png"]
-angles = [-41, 133]
+angles = [-222, 124]
 
 skyMap = SkyMap()
 skyMap.generate(allsky_img, skymap_img, angles)
