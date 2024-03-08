@@ -48,8 +48,12 @@ def astro_coordinates(allsky_angle):
 
     planets_list = [moon, mars, venus, jupiter, saturn] 
 
+
     stars = {}
     planets = {}
+    cardinal_names = ["N", "E", "S", "W"]
+    angle_card = 0
+    cardinals = {}
     
     for planet in planets_list:
         x, y = put_planet_name(planet, sidereal_time, allsky_angle)
@@ -58,8 +62,13 @@ def astro_coordinates(allsky_angle):
     for star in stars_list:
         x, y = put_star_name(star, allsky_angle, sidereal_time)
         stars[star] = (x,y)
+    
+    for c in cardinal_names:
+        angle_card += 90
+        x, y = utils.pol2cart(90-5, angle_card, allsky_angle)
+        cardinals[c] = (x,y)
 
-    return planets, stars
+    return planets, stars, cardinals
 
 
 

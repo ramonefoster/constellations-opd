@@ -188,9 +188,9 @@ class SkyMap():
                             plt.text(x, y, constellation, fontsize=4, color='gold', alpha=0.5)
 
                     # get planets and bright stars names/coordinates
-                    planets, stars = getEphem.astro_coordinates(self.allsky_angle)  
-                    valid_planets = [(planet, planets[planet]) for planet in planets if (-280 < planets[planet][0] < 280) and (-225 < planets[planet][1] < 230) and is_online]
-                    valid_stars = [(star, stars[star]) for star in stars if (-280 < stars[star][0] < 280) and (-220 < stars[star][1] < 220) and is_online]
+                    planets, stars, cardinals = getEphem.astro_coordinates(self.allsky_angle)  
+                    valid_planets = [(planet, planets[planet]) for planet in planets if (-280 < planets[planet][0] < 280) and (-225 < planets[planet][1] < 230)]
+                    valid_stars = [(star, stars[star]) for star in stars if (-280 < stars[star][0] < 280) and (-220 < stars[star][1] < 220)]
 
                     for planet, (x, y) in valid_planets:
                         if 'Moon' in planet:
@@ -203,6 +203,13 @@ class SkyMap():
 
                     for star, (x, y) in valid_stars:
                         plt.text(x, y, star, fontsize=5, color='gold', alpha=0.8)
+                    
+                    for card in cardinals:
+                        x, y = cardinals[card]
+                        x = max(-310, min(310, x))
+                        y = max(-225, min(225, y))
+                        plt.text(x, y, card, fontsize=8, color='black', alpha=1, ha='center', va='center', fontweight='bold')
+                        plt.text(x, y, card, fontsize=8, color='white', alpha=1, ha='center', va='center')
 
 
                     print(f"Creating map {time_at.utc_strftime('%H:%M')}")
@@ -216,10 +223,10 @@ class SkyMap():
                     print("ERRO SKYMAP:", str(e))
 
 #path of original allsky image
-allsky_img = [r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky340c.jpg", r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky_picole.jpg"]
+allsky_img = [r"C:\Users\servidorOPD\Documents\Programas\SistemaCOOPD\public\img\allsky340c.jpg", r"C:\Users\servidorOPD\Documents\Programas\SistemaCOOPD\public\img\allsky_picole.jpg"]
 #path of destination skymap image
-skymap_img = [r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky340c.png", r"C:\Users\servidorOPD\Documents\Programas\Servidor COOPD\public\img\allsky_picole.png"]
-angles = [-222, 124]
+skymap_img = [r"C:\Users\servidorOPD\Documents\Programas\SistemaCOOPD\public\img\allsky340c.png", r"C:\Users\servidorOPD\Documents\Programas\SistemaCOOPD\public\img\allsky_picole.png"]
+angles = [-220.5, 123.9]
 
 skyMap = SkyMap()
 skyMap.generate(allsky_img, skymap_img, angles)
