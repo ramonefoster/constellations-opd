@@ -117,8 +117,8 @@ def pol2cart(rho, phi, allsky_angle):
         x0 = 1.8
         y0 = -7.5
     else:
-        x0 = 7.9
-        y0 = -3.0
+        x0 = 9.2
+        y0 = -0.5
     
     x=3.365*x+x0
     y=3.365*y+y0
