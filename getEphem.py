@@ -63,10 +63,10 @@ def astro_coordinates(allsky_angle):
         x, y = put_star_name(star, allsky_angle, sidereal_time)
         stars[star] = (x,y)
     
-    for c in cardinal_names:
-        angle_card += 90
+    for c in cardinal_names:        
         x, y = utils.pol2cart(90-5, angle_card, allsky_angle)
         cardinals[c] = (x,y)
+        angle_card += 90
 
     return planets, stars, cardinals
 
